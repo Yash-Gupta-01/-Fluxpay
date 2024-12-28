@@ -8,7 +8,7 @@ app.use("/api/v1" , mainRoute );
 
 
 app.listen(3000 , ()=>{
-    console.log("on port 300")
+    console.log("live on https://localhost:3000");
 });
 
 

@@ -19,6 +19,7 @@ router.post("/signup", async (req, res) => {
             message: "Email already taken / Incorrect inputs"
         })
     }
+    //console.log(User); This should log the User model or an error if undefinedconsole.log(User); // This should log the User model or an error if undefined
     const existingUser = await User.findOne({
         username: req.body.username
     })

@@ -1,38 +1,50 @@
 import React, { useState } from 'react';
 import LoginImag from '../assets/LoginPage.svg'; 
-import {Link , NavLink} from 'react-router-dom'
+import {Link, Navigate, useNavigate} from 'react-router-dom';
+import { useAuth } from '../context/Authcontext';
 
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const navigate = useNavigate();
+    const { setIsAuthenticated } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
         try {
-            const response = await fetch('/user/signin', {
+            const response = await fetch('http://localhost:3000/api/v1/user/signin', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ userName: username, password })
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error('Invalid username or password');
+                throw new Error(data.message || 'Invalid username or password');
             }
 
-            const data = await response.json();
-            const { token } = data;
-
+            // Store token and user data
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('userName', data.name);
+            localStorage.setItem('userBalance', data.balance);
             
-            localStorage.setItem('token', token);
-            alert("Login successful!");
+            // Debug log
+            console.log('Token stored:', data.token);
+            
+            // Set auth state after successful login
+            setIsAuthenticated(true);
+            
+            // Navigate after successful login
+            navigate('/dashboard');
         } catch (error) {
-            setError('Invalid username or password');
+            setError(error.message || 'Invalid username or password');
         }
     };
 
@@ -78,10 +90,12 @@ const Login = () => {
                                 {showPassword ? 'Hide' : 'Show'}
                             </button>
                         </div>
-                        <Link to="/dashboard" className="block mx-auto w-full max-w-xs px-4 py-2 my-3 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
-                         Login
-                        </Link>
-                       
+                        <button 
+                            type="submit"
+                            className="block mx-auto w-full max-w-xs px-4 py-2 my-3 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                        >
+                            Login
+                        </button>
                     </form>
                 </div>
             </div>

@@ -10,8 +10,10 @@ import FAQ from './components/FAQ.jsx'
 import Login from './components/Login.jsx'
 import FirstUser from './components/FirstUser.jsx'
 import Dashboard from './components/Dashboard.jsx'
-
-
+import ProtectedRoute from './components/ProtectedRoute.jsx'
+import { AuthProvider } from './context/Authcontext.jsx';
+import TransferPage from './components/TransferPage.jsx';
+import TransactionHistory from './components/TransactionHistory';
 
 const router = createBrowserRouter([
   {
@@ -40,15 +42,36 @@ const router = createBrowserRouter([
       },
       {
         path: "dashboard",
-        element: <Dashboard/>
+        element: (
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        )
       },
-      
+      {
+        path: "transfer",
+        element: (
+          <ProtectedRoute>
+            <TransferPage />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "history",
+        element: (
+          <ProtectedRoute>
+            <TransactionHistory />
+          </ProtectedRoute>
+        )
+      },
     ]
   }
 ])
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
-  </React.StrictMode>,
-)
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  </React.StrictMode>
+);

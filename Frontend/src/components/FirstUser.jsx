@@ -18,7 +18,7 @@ const FirstUser = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ firstName, lastName, username: email, password })
+        body: JSON.stringify({ firstName, lastName, userName: email, password })
       });
 
       if (!response.ok) {

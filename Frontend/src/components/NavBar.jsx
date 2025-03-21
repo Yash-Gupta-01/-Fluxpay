@@ -1,12 +1,26 @@
-import React, { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/Authcontext';
 
 const NavBar = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const { isAuthenticated, setIsAuthenticated } = useAuth();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        // Check token on component mount and set both states
+        const token = localStorage.getItem('token');
+        if (token) {
+            setIsAuthenticated(true);
+        } else {
+            setIsAuthenticated(false);
+        }
+    }, [setIsAuthenticated]);
 
     const handleLogout = () => {
-        setIsLoggedIn(false);
+        localStorage.clear();
+        setIsAuthenticated(false);
+        navigate('/login');
     };
 
     return (
@@ -23,12 +37,16 @@ const NavBar = () => {
                     </button>
                 </div>
                 <div className={`lg:flex ${isOpen ? 'block' : 'hidden'} space-x-10`}>
-                    <NavLink exact to="/" className="text-white font-semibold" activeClassName="underline">Home</NavLink>
-                    <NavLink to="/about" className="text-white font-semibold" activeClassName="underline">About Us</NavLink>
-                    <NavLink to="/faq" className="text-white font-semibold" activeClassName="underline">FAQ</NavLink>
-                    <NavLink to="/login" className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">
-                        Login
-                    </NavLink>
+                    <NavLink to="/" className="text-white font-semibold underline">Home</NavLink>
+                    <NavLink to="/about" className="text-white font-semibold underline">About Us</NavLink>
+                    <NavLink to="/faq" className="text-white font-semibold underline">FAQ</NavLink>
+                    {isAuthenticated ? (
+                        <button onClick={handleLogout} className="text-white font-semibold">Logout</button>
+                    ) : (
+                        <NavLink to="/login" className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">
+                            Login
+                        </NavLink>
+                    )}
                 </div>
             </div>
         </nav>

@@ -14,6 +14,8 @@ import ProtectedRoute from './components/ProtectedRoute.jsx'
 import { AuthProvider } from './context/Authcontext.jsx';
 import TransferPage from './components/TransferPage.jsx';
 import TransactionHistory from './components/TransactionHistory';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProviderWrapper } from './ThemeContext';
 
 const router = createBrowserRouter([
   {
@@ -70,8 +72,11 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <ThemeProviderWrapper>
+      <CssBaseline />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </ThemeProviderWrapper>
   </React.StrictMode>
 );

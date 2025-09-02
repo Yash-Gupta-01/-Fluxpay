@@ -1,18 +1,30 @@
 import React from 'react';
+import { Box, Typography, Link, Container } from '@mui/material';
 
 const Footer = () => {
   return (
-    <footer className="bg-blue-800 text-white py-4 mt-8">
-      <div className="container mx-auto text-center">
-        <p className="mb-2">&copy; 2024 FlexiWallet. All rights reserved.</p>
-        <p className="mb-2">Made by Yash</p>
-        <p>
-          Connect on  
-          <a href="https://www.linkedin.com/in/yash-gupta-62a192228/" className="text-white-600 mx-1">Linkedin</a>
-         
-        </p>
-      </div>
-    </footer>
+    <Box sx={{ bgcolor: 'primary.main', color: 'white', py: 3, mt: 8 }}>
+      <Container maxWidth="lg">
+        <Box textAlign="center">
+          <Typography variant="body1" gutterBottom>
+            &copy; 2024 FlexiWallet. All rights reserved.
+          </Typography>
+          <Typography variant="body2" gutterBottom>
+            Made by Yash
+          </Typography>
+          <Typography variant="body2">
+            Connect on{' '}
+            <Link
+              href="https://www.linkedin.com/in/yash-gupta-62a192228/"
+              color="inherit"
+              underline="hover"
+            >
+              LinkedIn
+            </Link>
+          </Typography>
+        </Box>
+      </Container>
+    </Box>
   );
 };
 

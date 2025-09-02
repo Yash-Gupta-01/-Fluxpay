@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/Authcontext';
+import { useTheme } from '../ThemeContext';
+import { AppBar, Toolbar, Typography, Button, IconButton, Menu, MenuItem, Box, Switch, FormControlLabel } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
 
 const NavBar = () => {
-    const [isOpen, setIsOpen] = useState(false);
+    const [anchorEl, setAnchorEl] = useState(null);
     const { isAuthenticated, setIsAuthenticated } = useAuth();
+    const { mode, toggleTheme } = useTheme();
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Check token on component mount and set both states
         const token = localStorage.getItem('token');
         if (token) {
             setIsAuthenticated(true);
@@ -23,33 +28,70 @@ const NavBar = () => {
         navigate('/login');
     };
 
+    const handleMenu = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
     return (
-        <nav className="bg-blue-800 p-5">
-            <div className="container mx-auto flex justify-between items-center">
-                <div className="text-white text-lg font-bold">
-                    <Link to="/">FlexiWallet</Link>
-                </div>
-                <div className="block lg:hidden">
-                    <button onClick={() => setIsOpen(!isOpen)} className="text-white focus:outline-none">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={isOpen ? 'M6 18L18 6M6 6l12 12' : 'M4 6h16M4 12h16m-7 6h7'}></path>
-                        </svg>
-                    </button>
-                </div>
-                <div className={`lg:flex ${isOpen ? 'block' : 'hidden'} space-x-10`}>
-                    <NavLink to="/" className="text-white font-semibold underline">Home</NavLink>
-                    <NavLink to="/about" className="text-white font-semibold underline">About Us</NavLink>
-                    <NavLink to="/faq" className="text-white font-semibold underline">FAQ</NavLink>
+        <AppBar position="static">
+            <Toolbar>
+                <Typography variant="h6" component={Link} to="/" sx={{ flexGrow: 1, textDecoration: 'none', color: 'inherit' }}>
+                    FlexiWallet
+                </Typography>
+                <IconButton color="inherit" onClick={toggleTheme}>
+                    {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                </IconButton>
+                <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+                    <Button color="inherit" component={NavLink} to="/">Home</Button>
+                    <Button color="inherit" component={NavLink} to="/about">About Us</Button>
+                    <Button color="inherit" component={NavLink} to="/faq">FAQ</Button>
                     {isAuthenticated ? (
-                        <button onClick={handleLogout} className="text-white font-semibold">Logout</button>
+                        <Button color="inherit" onClick={handleLogout}>Logout</Button>
                     ) : (
-                        <NavLink to="/login" className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">
-                            Login
-                        </NavLink>
+                        <Button variant="contained" color="secondary" component={NavLink} to="/login">Login</Button>
                     )}
-                </div>
-            </div>
-        </nav>
+                </Box>
+                <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
+                    <IconButton
+                        size="large"
+                        edge="start"
+                        color="inherit"
+                        aria-label="menu"
+                        onClick={handleMenu}
+                    >
+                        <MenuIcon />
+                    </IconButton>
+                    <Menu
+                        id="menu-appbar"
+                        anchorEl={anchorEl}
+                        anchorOrigin={{
+                            vertical: 'top',
+                            horizontal: 'right',
+                        }}
+                        keepMounted
+                        transformOrigin={{
+                            vertical: 'top',
+                            horizontal: 'right',
+                        }}
+                        open={Boolean(anchorEl)}
+                        onClose={handleClose}
+                    >
+                        <MenuItem onClick={handleClose} component={NavLink} to="/">Home</MenuItem>
+                        <MenuItem onClick={handleClose} component={NavLink} to="/about">About Us</MenuItem>
+                        <MenuItem onClick={handleClose} component={NavLink} to="/faq">FAQ</MenuItem>
+                        {isAuthenticated ? (
+                            <MenuItem onClick={() => { handleClose(); handleLogout(); }}>Logout</MenuItem>
+                        ) : (
+                            <MenuItem onClick={handleClose} component={NavLink} to="/login">Login</MenuItem>
+                        )}
+                    </Menu>
+                </Box>
+            </Toolbar>
+        </AppBar>
     );
 };
 

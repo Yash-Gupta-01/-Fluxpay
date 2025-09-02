@@ -1,32 +1,39 @@
 import React from 'react';
 import image from '../assets/E-Wallet.png';
-import './LandingPage.css';
-import {Link , NavLink} from 'react-router-dom'
+import { Link } from 'react-router-dom';
+import { Container, Typography, Button, Grid, Box } from '@mui/material';
 
 const LandingPage = () => {
-
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex flex-col lg:flex-row items-center lg:items-start">
-        <div className="w-full lg:w-1/2">
-          <img 
+    <Container maxWidth="lg" sx={{ py: 8 }}>
+      <Grid container spacing={4} alignItems="center">
+        <Grid item xs={12} md={6}>
+          <Box
+            component="img"
             src={image}
-            alt="Placeholder"
-            className="w-full"
+            alt="E-Wallet"
+            sx={{ width: '100%', height: 'auto' }}
           />
-        </div>
-        <div className="w-full lg:w-1/2 mt-4 lg:mt-0 lg:pl-8 text-center lg:text-left">
-          <h1 className="text-2xl lg:text-6xl font-bold mb-4 my-56 animate-fade-in ">Welcome to FlexiWallet</h1>
-          <p className="text-lg lg:text-2xl mb-4 my-48 mt-10 animate-fade-in">
-          FlexiWallet is a cutting-edge digital wallet solution designed to streamline your financial transactions.
-          </p>
-          <hr className="my-6 border-gray-300" />
-          
-          <Link to="/FirstUser" className="bg-blue-500 text-white text-semibold px-4 py-2 rounded">Get Started</Link>
-         
-        </div>
-      </div>
-    </div>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Typography variant="h2" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
+            Welcome to FlexiWallet
+          </Typography>
+          <Typography variant="h5" paragraph>
+            FlexiWallet is a cutting-edge digital wallet solution designed to streamline your financial transactions.
+          </Typography>
+          <Button
+            variant="contained"
+            size="large"
+            component={Link}
+            to="/FirstUser"
+            sx={{ mt: 2 }}
+          >
+            Get Started
+          </Button>
+        </Grid>
+      </Grid>
+    </Container>
   );
 };
 

@@ -1,9 +1,11 @@
-const { Account, User, Transaction } = require("../Database/db");
-const mongoose = require("mongoose");
+const { Account, User, Transaction, sequelize } = require("../Database/db");
+const { createTransactionNotifications } = require("./notificationController");
+const { processTransaction } = require("./transactionController");
+const crypto = require('crypto');
 
 const getBalance = async (req, res) => {
     try {
-        const account = await Account.findOne({ userId: req.userId });
+        const account = await Account.findOne({ where: { userId: req.userId } });
 
         if (!account) {
             return res.status(404).json({ message: "Account not found" });
@@ -19,87 +21,77 @@ const transfer = async (req, res) => {
     try {
         const { amount, to } = req.body;
 
-        // Validate amount
-        if (!amount || amount <= 0) {
-            return res.status(400).json({ message: "Invalid amount" });
+        // Input validation
+        if (!to) {
+            return res.status(400).json({ message: "Receiver ID is required" });
+        }
+        if (!amount || typeof amount !== 'number') {
+            return res.status(400).json({ message: "Valid amount is required" });
+        }
+        if (amount <= 0) {
+            return res.status(400).json({ message: "Amount must be greater than 0" });
+        }
+        if (to === req.userId) {
+            return res.status(400).json({ message: "Cannot transfer to yourself" });
         }
 
-        // Find sender and receiver accounts
-        const fromAccount = await Account.findOne({ userId: req.userId });
-        const toAccount = await Account.findOne({ userId: to });
+        // Use processTransaction for atomic transaction processing
+        const transaction = await processTransaction(req.userId, to, amount, `Transfer from user ${req.userId} to user ${to}`);
 
-        // Validate accounts
-        if (!fromAccount) {
-            return res.status(404).json({ message: "Sender account not found" });
+        // Fetch updated balance
+        const updatedFromAccount = await Account.findOne({ where: { userId: req.userId } });
+
+        // Try to create notifications
+        try {
+            await createTransactionNotifications(
+                req.userId,
+                to,
+                transaction.id,
+                updatedFromAccount.vpaAddress,
+                (await Account.findOne({ where: { userId: to } })).vpaAddress,
+                amount
+            );
+        } catch (notificationError) {
+            // Log notification error but don't fail the transaction
+            console.error('Failed to create notifications:', notificationError);
         }
-        if (!toAccount) {
-            return res.status(404).json({ message: "Receiver account not found" });
-        }
-        if (fromAccount.balance < amount) {
-            return res.status(400).json({ message: "Insufficient balance" });
-        }
-
-        // Update sender's balance
-        const updateSender = await Account.updateOne(
-            { userId: req.userId },
-            { $inc: { balance: -amount } }
-        );
-
-        // Update receiver's balance
-        const updateReceiver = await Account.updateOne(
-            { userId: to },
-            { $inc: { balance: amount } }
-        );
-
-        // Get receiver's name for better description
-        const receiver = await User.findById(to);
-        const sender = await User.findById(req.userId);
-
-        // Create transaction records
-        await Transaction.create([
-            {
-                userId: req.userId,
-                type: 'debit',
-                amount: amount,
-                description: `Transfer to ${receiver.firstName} ${receiver.lastName}`,
-                relatedUserId: to,
-                status: 'completed'
-            },
-            {
-                userId: to,
-                type: 'credit',
-                amount: amount,
-                description: `Transfer from ${sender.firstName} ${sender.lastName}`,
-                relatedUserId: req.userId,
-                status: 'completed'
-            }
-        ]);
-
-        // Get updated sender balance
-        const updatedFromAccount = await Account.findOne({ userId: req.userId });
 
         res.json({
             message: "Transfer successful",
             balance: updatedFromAccount.balance,
             transactionDetails: {
                 amount,
-                receiver: `${receiver.firstName} ${receiver.lastName}`,
-                timestamp: new Date()
+                receiver: `User ID ${to}`,
+                timestamp: new Date(),
+                transactionId: transaction.transactionId
             }
         });
 
     } catch (error) {
         console.error('Transfer error:', error);
-        res.status(400).json({ 
-            message: error.message || "Transfer failed",
-            error: error.toString()
+        
+        const statusCode = error.statusCode || 500;
+        res.status(statusCode).json({ 
+            message: statusCode === 500 ? "An unexpected error occurred during transfer" : error.message,
+            error: process.env.NODE_ENV === 'development' ? error.toString() : undefined
         });
     }
 };
 
 const getUserName = async (req, res) => {
-    const user = await User.findById(req.userId);
-    res.json({ name: user.firstName });
+    try {
+        const user = await User.findByPk(req.userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.json({ name: user.firstName });
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(500).json({
+            message: "Error fetching user details",
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
 };
 
 module.exports = {

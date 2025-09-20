@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
+import { ArrowLeft, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
 
 const TransactionHistory = () => {
     const [transactions, setTransactions] = useState([]);
@@ -16,7 +20,7 @@ const TransactionHistory = () => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:3000/api/v1/transactions', {
+                const response = await fetch('http://localhost:3000/api/v1/transaction/history', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -43,81 +47,93 @@ const TransactionHistory = () => {
 
     if (error) {
         return (
-            <div className="container mx-auto px-4 py-8">
-                <div className="text-center text-red-500">
-                    {error}
-                </div>
-                <div className="text-center mt-4">
-                    <Link to="/dashboard" className="text-blue-500 hover:text-blue-700">
-                        Return to Dashboard
-                    </Link>
-                </div>
+            <div className="min-h-screen bg-background flex items-center justify-center p-4">
+                <Card className="w-full max-w-md">
+                    <CardContent className="text-center p-6">
+                        <div className="text-destructive mb-4">
+                            {error}
+                        </div>
+                        <Button asChild>
+                            <Link to="/dashboard">Return to Dashboard</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
         );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="flex justify-between items-center mb-6">
-                <Link
-                    to="/dashboard"
-                    className="text-blue-500 hover:text-blue-700 font-medium"
-                >
-                    ← Go to Dashboard
-                </Link>
-                <h2 className="text-2xl font-bold">Transaction History</h2>
-                <div className="w-[100px]"></div> {/* Spacer for alignment */}
-            </div>
-            {loading ? (
-                <div className="text-center">Loading transactions...</div>
-            ) : transactions.length === 0 ? (
-                <div className="text-center text-gray-500">No transactions found</div>
-            ) : (
-                <div className="overflow-x-auto bg-white rounded-lg shadow">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Type
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Amount
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Description
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Date
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {transactions.map((transaction) => (
-                                <tr key={transaction._id}>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                            transaction.type === 'credit' 
-                                                ? 'bg-green-100 text-green-800' 
-                                                : 'bg-red-100 text-red-800'
-                                        }`}>
-                                            {transaction.type}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        ₹{transaction.amount}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {transaction.description}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {new Date(transaction.timestamp).toLocaleString()}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+        <div className="min-h-screen bg-background">
+            <div className="container mx-auto px-4 py-8">
+                <div className="flex items-center justify-between mb-6">
+                    <Button variant="ghost" asChild>
+                        <Link to="/dashboard" className="flex items-center space-x-2">
+                            <ArrowLeft className="h-4 w-4" />
+                            <span>Dashboard</span>
+                        </Link>
+                    </Button>
+                    <h1 className="text-3xl font-bold text-foreground">Transaction History</h1>
+                    <div></div> {/* Spacer */}
                 </div>
-            )}
+
+                {loading ? (
+                    <Card>
+                        <CardContent className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            <span className="ml-2">Loading transactions...</span>
+                        </CardContent>
+                    </Card>
+                ) : transactions.length === 0 ? (
+                    <Card>
+                        <CardContent className="text-center py-8">
+                            <CreditCard className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                            <p className="text-muted-foreground">No transactions found</p>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="space-y-4">
+                        {transactions.map((transaction) => (
+                            <Card key={transaction.transactionId}>
+                                <CardContent className="p-6">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-4">
+                                            <div className={`p-2 rounded-full ${
+                                                transaction.type === 'credit'
+                                                    ? 'bg-green-100 text-green-600'
+                                                    : 'bg-red-100 text-red-600'
+                                            }`}>
+                                                {transaction.type === 'credit' ? (
+                                                    <TrendingUp className="h-5 w-5" />
+                                                ) : (
+                                                    <TrendingDown className="h-5 w-5" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <Badge variant={transaction.type === 'credit' ? 'default' : 'destructive'}>
+                                                    {transaction.type}
+                                                </Badge>
+                                                <p className="text-sm text-muted-foreground mt-1">
+                                                    {transaction.description || 'No description'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className={`text-lg font-semibold ${
+                                                transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
+                                            }`}>
+                                                {transaction.type === 'credit' ? '+' : '-'}₹{transaction.amount}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {new Date(transaction.timestamp).toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

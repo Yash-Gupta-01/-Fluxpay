@@ -1,34 +1,39 @@
-# FlexiWallet
-Flexiwallet is a comprehensive web application designed to handle basic wallet functionalities such as user registration, login, searching for users, and transferring money between users.
+# Fluxpay
+Fluxpay is a comprehensive web application designed to handle basic wallet functionalities such as user registration, login, searching for users, and transferring money between users.
 
-## Features
+## ✨ Features
 
-- User registration and authentication
-- Secure login system
-- Search for other users
-- Transfer money between users
-- Transaction history
-- Account management
+- **Modern UI/UX**: Clean, minimalistic design with shadcn/ui components and smooth transitions
+- **Dark/Light Mode**: Toggle between themes with persistent user preference
+- **Secure Authentication**: JWT-based authentication with protected routes
+- **Real-time Notifications**: Instant updates using Server-Sent Events
+- **Digital Wallet**: Send and receive money with VPA (Virtual Payment Address)
+- **Transaction History**: Comprehensive transaction tracking and filtering
+- **Account Management**: Balance tracking and account overview
+- **Responsive Design**: Mobile-first approach with seamless cross-device experience
+- **Real-time Balance Updates**: Instant balance synchronization across sessions
 
 ## Tech Stack
 
 ### Backend
 - Node.js
 - Express.js
-- MongoDB (with Mongoose)
+- PostgreSQL (with Sequelize)
 - JWT for authentication
 - Zod for validation
 
 ### Frontend
-- React
+- React 18
 - Vite
 - Tailwind CSS
-- Axios for API calls
+- shadcn/ui (Modern component library)
 - React Router for navigation
+- Axios for API calls
+- React Context for state management
 
 ## Prerequisites
-- Node.js (version 14 or higher)
-- MongoDB (local or cloud instance)
+- Node.js (version 18 or higher)
+- PostgreSQL (local or cloud instance)
 - npm or yarn
 
 ## Installation
@@ -54,8 +59,9 @@ Flexiwallet is a comprehensive web application designed to handle basic wallet f
 4. Set up environment variables:
    Create a `.env` file in the Backend directory with:
    ```
-   MONGO_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
+   DATABASE_URL=your_postgresql_connection_string
+   JWT_SECRET=your_jwt_secret_key
+   PORT=3000
    ```
 
 5. Start the backend server:
@@ -77,14 +83,54 @@ Flexiwallet is a comprehensive web application designed to handle basic wallet f
 3. Search for users to transfer money.
 4. View transaction history on the dashboard.
 
-## API Endpoints
+## 🎨 UI Components
 
+The application features modernized components with consistent styling:
+
+- **NavBar**: Responsive navigation with theme toggle and authentication state
+- **Dashboard**: Modern card-based layout with balance display and quick actions
+- **TransferPage**: Clean form design for money transfers
+- **TransactionHistory**: Tabular data with filtering and sorting
+- **Notifications**: Real-time notification center with read/unread states
+- **Login/Signup**: Modern authentication forms with validation
+- **Landing Page**: Hero section with call-to-action and feature highlights
+
+## 🌙 Dark/Light Mode
+
+- Toggle between themes using the theme switcher in the navigation
+- Persistent theme preference stored in localStorage
+- Smooth transitions between light and dark modes
+- Consistent theming across all components
+
+## 📱 Responsive Design
+
+- Mobile-first approach with breakpoints at 640px, 768px, and 1024px
+- Touch-friendly interface elements
+- Optimized layouts for tablet and desktop viewing
+- Accessible design following WCAG guidelines
+
+## 🔗 API Endpoints
+
+### Authentication
 - `POST /api/v1/user/signup` - User registration
 - `POST /api/v1/user/signin` - User login
-- `GET /api/v1/user/bulk` - Search users
+- `GET /api/v1/user/profile` - Get user profile
+- `PUT /api/v1/user` - Update user profile
+
+### Account Management
 - `GET /api/v1/account/balance` - Get account balance
 - `POST /api/v1/account/transfer` - Transfer money
-- `GET /api/v1/transactions` - Get transaction history
+- `GET /api/v1/account/user/:id` - Get user details by ID
+
+### Transactions
+- `GET /api/v1/transaction/history` - Get transaction history
+- `POST /api/v1/transaction/transfer` - Create new transaction
+
+### Notifications
+- `GET /api/v1/notification` - Get user notifications
+- `PUT /api/v1/notification/:id/read` - Mark notification as read
+
+**Note**: All endpoints except signup and signin require JWT authentication via Authorization header.
 
 ## Contributing
 
@@ -97,5 +143,20 @@ Flexiwallet is a comprehensive web application designed to handle basic wallet f
 
 This project is licensed under the MIT License.
 
-## Architecture
-![image](https://github.com/anu30singh/FlexiWallet/blob/6e8c079b0a392ebf14356676889ad947d593fc6a/Diagrams/Application%20Architecture.png)
+## 🏗 Architecture
+![Application Architecture](Diagrams/Application%20Architecture.png)
+
+## 🚀 Recent Updates
+
+This project has been modernized with the following enhancements:
+
+- **Modern UI Components**: Migrated to shadcn/ui for consistent, accessible design
+- **Dark/Light Mode**: Added theme switching with smooth transitions
+- **Enhanced Responsiveness**: Mobile-first design with improved cross-device experience
+- **Component Architecture**: Modular, reusable components with better maintainability
+- **Real-time Features**: Server-Sent Events integration for instant notifications
+- **Improved Accessibility**: WCAG compliant design with proper ARIA labels
+
+---
+
+**Built with ❤️ using modern web technologies for the future of digital payments**

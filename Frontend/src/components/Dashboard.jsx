@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import profilePic from '../assets/User.svg';
+import { Button } from './ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Badge } from './ui/badge';
+import { ArrowUpRight, Bell, CreditCard, History } from 'lucide-react';
 
 const Dashboard = () => {
-    const [users, setUsers] = useState([]);
-    const [search, setSearch] = useState("");
-    const [filteredUsers, setFilteredUsers] = useState([]);
     const [profile, setProfile] = useState({
         name: "",
         email: "",
+        vpa: "",
         balance: 0,
         avatar: profilePic
     });
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
-    
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -29,7 +33,7 @@ const Dashboard = () => {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                
+
                 if (!response.ok) {
                     throw new Error('Invalid token');
                 }
@@ -41,12 +45,11 @@ const Dashboard = () => {
 
         verifyToken();
     }, [navigate]);
-    
 
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const token = localStorage.getItem('token'); // Retrieve token from localStorage
+                const token = localStorage.getItem('token');
                 const response = await fetch('http://localhost:3000/api/v1/user/profile', {
                     method: 'GET',
                     headers: {
@@ -64,115 +67,112 @@ const Dashboard = () => {
                     name: data.name || "User Name",
                     email: data.email || "user@example.com",
                     balance: data.balance || 0,
-                    avatar: profilePic // Default avatar
+                    vpa: data.vpa || "",
+                    avatar: profilePic
                 });
             } catch (error) {
                 console.error("Error fetching profile:", error);
-            }
-        };
-
-        const fetchUsers = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:3000/api/v1/user/bulk', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to fetch users');
-                }
-                
-                const data = await response.json();
-                setUsers(data.users);
-                setFilteredUsers(data.users);
-            } catch (error) {
-                console.error("Error fetching users:", error);
+            } finally {
+                setLoading(false);
             }
         };
 
         fetchProfile();
-        fetchUsers();
     }, []);
-
-    const handleSearch = (event) => {
-        const value = event.target.value;
-        setSearch(value);
-        const filtered = users.filter(user =>
-            user.firstName.toLowerCase().includes(value.toLowerCase()) ||
-            user.lastName.toLowerCase().includes(value.toLowerCase())
-        );
-        setFilteredUsers(filtered);
-    };
 
     const handleUpdate = () => {
         alert('User updated successfully');
     };
 
-    const handlePay = (user) => {
-        navigate('/transfer', { state: { user } });
-    };
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <p className="mt-2 text-muted-foreground">Loading dashboard...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="flex justify-end p-4 bg-gray-100 min-h-screen">
-            <div className="container mx-auto max-w-2xl bg-white p-6 rounded-lg shadow-md relative z-10">
-                <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-                <div className="flex items-center mb-8">
-                    <img src={profile.avatar} alt="Profile" className="w-20 h-20 rounded-full mr-4" />
-                    <div>
-                        <h2 className="text-2xl font-semibold">{profile.name}</h2>
-                        <p className="text-lg text-gray-600">{profile.email}</p>
-                        <div className="mt-2 flex items-center space-x-2">
-                            <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">
-                                Balance: Rs {profile.balance.toFixed(2)}
-                            </div>
-                            <button
-                                onClick={handleUpdate}
-                                className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                Update Profile
-                            </button>
-                            <Link
-                                to="/history"
-                                className="p-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            >
-                                Transaction History
-                            </Link>
-                        </div>
-                    </div>
+        <div className="min-h-screen bg-background">
+            <div className="container mx-auto px-4 py-8">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard</h1>
+                    <p className="text-muted-foreground">Welcome back, {profile.name.split(' ')[0]}!</p>
                 </div>
-                <div className="mb-4">
-                    <input
-                        type="text"
-                        placeholder="Search Users"
-                        value={search}
-                        onChange={handleSearch}
-                        className="p-3 border border-gray-300 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
-                <div>
-                    <h2 className="text-xl font-semibold mb-4">Frequently Contacted :</h2>
-                    <ul>
-                        {filteredUsers.map(user => (
-                            <li key={user._id} className="mb-4 p-4 bg-white rounded-lg shadow-md flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <img src={profilePic} alt="User" className="w-12 h-12 rounded-full mr-4" />
-                                    <div>
-                                        <h3 className="text-lg font-semibold">{user.firstName} {user.lastName}</h3>
-                                        {/* <p className="text-gray-600">ID: {user._id}</p> */}
-                                    </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <Card className="lg:col-span-2">
+                        <CardHeader>
+                            <CardTitle>Profile Information</CardTitle>
+                            <CardDescription>Your account details and balance</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center space-x-4 mb-4">
+                                <Avatar className="h-16 w-16">
+                                    <AvatarImage src={profile.avatar} alt={profile.name} />
+                                    <AvatarFallback>{profile.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <h3 className="text-xl font-semibold">{profile.name}</h3>
+                                    <p className="text-muted-foreground">{profile.email}</p>
+                                    <p className="text-sm text-muted-foreground">VPA: {profile.vpa}</p>
                                 </div>
-                                <button
-                                    onClick={() => handlePay(user)}
-                                    className="p-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
-                                >
-                                    Pay
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <Badge variant="secondary" className="text-lg px-4 py-2">
+                                    Balance: ₹{profile.balance.toFixed(2)}
+                                </Badge>
+                                <Button onClick={handleUpdate} variant="outline">
+                                    Update Profile
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Quick Actions</CardTitle>
+                            <CardDescription>Common tasks</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <Button asChild className="w-full justify-start" size="lg">
+                                <Link to="/transfer">
+                                    <CreditCard className="mr-2 h-4 w-4" />
+                                    Transfer Money
+                                </Link>
+                            </Button>
+                            <Button asChild variant="outline" className="w-full justify-start" size="lg">
+                                <Link to="/notifications">
+                                    <Bell className="mr-2 h-4 w-4" />
+                                    Notifications
+                                </Link>
+                            </Button>
+                            <Button asChild variant="outline" className="w-full justify-start" size="lg">
+                                <Link to="/history">
+                                    <History className="mr-2 h-4 w-4" />
+                                    Transaction History
+                                </Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
                 </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Recent Activity</CardTitle>
+                        <CardDescription>Your latest transactions and updates</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-center py-8 text-muted-foreground">
+                            <ArrowUpRight className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                            <p>No recent activity to display</p>
+                            <p className="text-sm">Your transactions will appear here</p>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

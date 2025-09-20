@@ -1,12 +1,12 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require("../Middlewares/auth");
-const { getTransactionHistory, createTransaction } = require("../controllers/transactionController");
+const { getTransactionHistory, createTransaction } = require('../controllers/transactionController');
+const { authMiddleware } = require('../Middlewares/auth');
 
 // Route to fetch transaction history
-router.get("/", authMiddleware, getTransactionHistory);
+router.get('/history', authMiddleware, getTransactionHistory);
 
 // Route to create a new transaction
-router.post("/", authMiddleware, createTransaction);
+router.post('/transfer', authMiddleware, createTransaction);
 
 module.exports = router;

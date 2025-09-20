@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 const TransferPage = () => {
     const [amount, setAmount] = useState('');
+    const [receiverVPA, setReceiverVPA] = useState('');
+    const [description, setDescription] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [senderDetails, setSenderDetails] = useState({});
     const navigate = useNavigate();
-    const location = useLocation();
-    const receiverDetails = location.state?.user;
 
     useEffect(() => {
         fetchSenderDetails();
@@ -41,8 +44,8 @@ const TransferPage = () => {
             return;
         }
 
-        if (!receiverDetails?._id) {
-            setError('Invalid receiver selected');
+        if (!receiverVPA.trim()) {
+            setError('Please enter receiver VPA');
             setLoading(false);
             return;
         }
@@ -57,15 +60,16 @@ const TransferPage = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3000/api/v1/account/transfer', {
+            const response = await fetch('http://localhost:3000/api/v1/transaction/transfer', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    to: receiverDetails._id,
-                    amount: Number(amount)
+                    receiverVPA: receiverVPA.trim(),
+                    amount: Number(amount),
+                    description: description.trim()
                 })
             });
 
@@ -82,7 +86,7 @@ const TransferPage = () => {
             // Show success notification
             alert('Transfer successful!');
             navigate('/dashboard', { replace: true });
-            
+
         } catch (error) {
             setError(error.message || 'Transaction failed');
             console.error('Transfer error:', error);
@@ -92,74 +96,88 @@ const TransferPage = () => {
     };
 
     return (
-        <div className="container mx-auto max-w-md p-6">
-            <div className="bg-white rounded-lg shadow-md p-8">
-                <h2 className="text-2xl font-bold text-center mb-6">Transfer Money</h2>
-                
-                <div className="mb-6">
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Sender</label>
-                        <div className="p-3 bg-gray-50 rounded-md">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+            <Card className="w-full max-w-md">
+                <CardHeader>
+                    <CardTitle>Transfer Money</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="mb-6">
+                        <label className="block text-sm font-medium text-foreground mb-1">Sender</label>
+                        <div className="p-3 bg-muted rounded-md">
                             {senderDetails.name || 'Loading...'}
                         </div>
                     </div>
 
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Receiver</label>
-                        <div className="p-3 bg-gray-50 rounded-md">
-                            {receiverDetails ? `${receiverDetails.firstName} ${receiverDetails.lastName}` : 'Not selected'}
+                    <form onSubmit={handleTransfer} className="space-y-4">
+                        <div>
+                            <label htmlFor="receiverVPA" className="block text-sm font-medium text-foreground mb-1">Receiver VPA</label>
+                            <Input
+                                id="receiverVPA"
+                                type="text"
+                                value={receiverVPA}
+                                onChange={(e) => setReceiverVPA(e.target.value)}
+                                placeholder="Enter receiver's VPA"
+                                required
+                            />
                         </div>
-                    </div>
 
-                    <form onSubmit={handleTransfer}>
-                        <div className="mb-4">
-                            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+                        <div>
+                            <label htmlFor="amount" className="block text-sm font-medium text-foreground mb-1">
                                 Amount (₹)
                             </label>
-                            <input
-                                type="number"
+                            <Input
                                 id="amount"
+                                type="number"
                                 value={amount}
                                 onChange={(e) => {
                                     const value = e.target.value;
-                                    if (value >= 0) {  // Prevent negative numbers
+                                    if (value >= 0) {
                                         setAmount(value);
                                     }
                                 }}
-                                className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 placeholder="Enter amount"
                                 required
                                 min="1"
-                                max={localStorage.getItem('userBalance')} // Add maximum limit
-                                step="1" // Allow only whole numbers
+                                max={localStorage.getItem('userBalance')}
+                                step="1"
                                 onKeyDown={(e) => {
-                                    // Prevent decimal point
                                     if (e.key === '.') {
                                         e.preventDefault();
                                     }
                                 }}
                             />
-                            <div className="text-sm text-gray-500 mt-1">
+                            <div className="text-sm text-muted-foreground mt-1">
                                 Available balance: ₹{localStorage.getItem('userBalance') || 0}
                             </div>
                         </div>
 
+                        <div>
+                            <label htmlFor="description" className="block text-sm font-medium text-foreground mb-1">
+                                Description (Optional)
+                            </label>
+                            <Input
+                                id="description"
+                                type="text"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="Enter description"
+                                maxLength="255"
+                            />
+                        </div>
+
                         {error && (
-                            <div className="mb-4 text-red-500 text-center">
+                            <div className="text-sm text-destructive text-center p-2 bg-destructive/10 rounded-md">
                                 {error}
                             </div>
                         )}
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400"
-                        >
+                        <Button type="submit" disabled={loading} className="w-full">
                             {loading ? 'Processing...' : 'Send Money'}
-                        </button>
+                        </Button>
                     </form>
-                </div>
-            </div>
+                </CardContent>
+            </Card>
         </div>
     );
 };

@@ -1,19 +1,25 @@
 import React, { useState } from 'react';
-import LoginImag from '../assets/LoginPage.svg'; 
-import {Link, Navigate, useNavigate} from 'react-router-dom';
+import LoginImag from '../assets/LoginPage.svg';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/Authcontext';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
     const { setIsAuthenticated } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
 
         try {
             const response = await fetch('http://localhost:3000/api/v1/user/signin', {
@@ -34,69 +40,104 @@ const Login = () => {
             localStorage.setItem('token', data.token);
             localStorage.setItem('userName', data.name);
             localStorage.setItem('userBalance', data.balance);
-            
-            // Debug log
-            console.log('Token stored:', data.token);
-            
+
             // Set auth state after successful login
             setIsAuthenticated(true);
-            
+
             // Navigate after successful login
             navigate('/dashboard');
         } catch (error) {
             setError(error.message || 'Invalid username or password');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-100">
-            <div className="flex w-full max-w-4xl bg-white rounded-xl shadow-lg">
-                <div className="w-1/2 p-8">
-                    <img 
-                    src={LoginImag} 
-                    alt="Login Illustration" 
-                    className="w-full h-full object-cover rounded-l-xl" />
-                </div>
-                <div className="w-1/2 p-8 space-y-3">
-                    <h1 className="text-2xl font-bold text-center">Login</h1>
-                    {error && <p className="text-red-500 text-center">{error}</p>}
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-1">
-                            <label htmlFor="username" className="block text-sm font-medium text-gray-700">Username</label>
-                            <input
-                                type="text"
-                                id="username"
-                                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                required
+        <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center p-4">
+            <div className="w-full max-w-4xl">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <Card className="hidden lg:block overflow-hidden">
+                        <CardContent className="p-0">
+                            <img
+                                src={LoginImag}
+                                alt="Login Illustration"
+                                className="w-full h-full object-cover"
                             />
-                        </div>
-                        <div className="space-y-1 relative">
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                id="password"
-                                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                            <button
-                                type="button"
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm"
-                                onClick={() => setShowPassword(!showPassword)}
-                            >
-                                {showPassword ? 'Hide' : 'Show'}
-                            </button>
-                        </div>
-                        <button 
-                            type="submit"
-                            className="block mx-auto w-full max-w-xs px-4 py-2 my-3 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                        >
-                            Login
-                        </button>
-                    </form>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="text-center">
+                            <CardTitle className="text-2xl">Welcome Back</CardTitle>
+                            <CardDescription>
+                                Sign in to your FluxPay account
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                {error && (
+                                    <div className="text-sm text-destructive text-center p-2 bg-destructive/10 rounded-md">
+                                        {error}
+                                    </div>
+                                )}
+                                <div className="space-y-2">
+                                    <label htmlFor="username" className="text-sm font-medium">
+                                        Username
+                                    </label>
+                                    <Input
+                                        id="username"
+                                        type="text"
+                                        placeholder="Enter your username"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label htmlFor="password" className="text-sm font-medium">
+                                        Password
+                                    </label>
+                                    <div className="relative">
+                                        <Input
+                                            id="password"
+                                            type={showPassword ? 'text' : 'password'}
+                                            placeholder="Enter your password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            required
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff className="h-4 w-4" />
+                                            ) : (
+                                                <Eye className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </div>
+                                </div>
+                                <Button
+                                    type="submit"
+                                    className="w-full"
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? 'Signing in...' : 'Sign In'}
+                                </Button>
+                            </form>
+                            <div className="mt-4 text-center text-sm">
+                                Don't have an account?{' '}
+                                <Link to="/FirstUser" className="text-primary hover:underline">
+                                    Sign up
+                                </Link>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </div>

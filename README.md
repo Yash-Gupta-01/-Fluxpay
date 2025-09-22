@@ -142,6 +142,3 @@ The application features modernized components with consistent styling:
 ## License
 
 This project is licensed under the MIT License.
-
-## 🏗 Architecture
-![image](https://github.com/Yash-Gupta-01/-Fluxpay/blob/main/Diagrams/Application%20Architecture.png)

@@ -132,6 +132,90 @@ The application features modernized components with consistent styling:
 
 **Note**: All endpoints except signup and signin require JWT authentication via Authorization header.
 
+## 📊 Database Schema (ER Diagram)
+
+### Entities & Attributes
+
+#### 👤 User
+- `id` (Primary Key)
+- `userName` (Unique, lowercase)
+- `password` (8-100 chars)
+- `firstName`
+- `lastName`
+- `email` (Unique)
+- `createdAt`, `updatedAt`
+
+#### 💰 Account
+- `id` (Primary Key)
+- `userId` (Foreign Key → User.id)
+- `balance` (Default: 100.00)
+- `vpaAddress` (Unique)
+- `createdAt`, `updatedAt`
+
+#### 💸 Transaction
+- `id` (Primary Key)
+- `transactionId` (Unique UUID)
+- `senderId` (Foreign Key → User.id)
+- `receiverId` (Foreign Key → User.id)
+- `amount` (Decimal 10,2)
+- `description` (Text)
+- `status` (ENUM: pending, completed, failed)
+- `createdAt`, `updatedAt`
+
+#### 🔔 Notification
+- `id` (Primary Key)
+- `userId` (Foreign Key → User.id)
+- `transactionId` (Foreign Key → Transaction.id)
+- `message` (Text)
+- `read` (Boolean, Default: false)
+- `createdAt`, `updatedAt`
+
+### Relationships
+
+```
+User (1) ─── (1) Account
+   │
+   ├── (1:N) ─── (N) Transaction (as sender)
+   ├── (1:N) ─── (N) Transaction (as receiver)
+   │
+   └── (1:N) ─── (N) Notification
+
+Transaction (1) ─── (1:N) Notification
+```
+
+### Key Relationships Explained
+
+#### User ↔ Account (One-to-One)
+- Each user has exactly one account
+- Account belongs to one user
+- Account gets 100.00 initial balance
+
+#### User ↔ Transaction (One-to-Many, Bidirectional)
+- User can send many transactions (as sender)
+- User can receive many transactions (as receiver)
+- Each transaction has one sender and one receiver
+
+#### User ↔ Notification (One-to-Many)
+- User can have many notifications
+- Each notification belongs to one user
+
+#### Transaction ↔ Notification (One-to-Many)
+- Each transaction can generate multiple notifications
+- Each notification relates to one transaction
+
+### Business Logic
+- **VPA (Virtual Payment Address)**: Unique identifier for money transfers
+- **Transaction Flow**: Sender's balance decreases, receiver's balance increases atomically
+- **Notification System**: Real-time updates for transaction events
+- **Security**: Password validation, JWT authentication, secure transaction processing
+
+### Database Design Highlights
+✅ **Normalized Structure** - No data redundancy
+✅ **Referential Integrity** - Foreign key constraints
+✅ **Indexing** - Optimized for VPA lookups and user queries
+✅ **Atomic Transactions** - Database-level transaction support
+✅ **Audit Trail** - Timestamps on all entities
+
 ## Contributing
 
 1. Fork the repository.
@@ -142,3 +226,6 @@ The application features modernized components with consistent styling:
 ## License
 
 This project is licensed under the MIT License.
+
+
+

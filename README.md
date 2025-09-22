@@ -144,19 +144,4 @@ The application features modernized components with consistent styling:
 This project is licensed under the MIT License.
 
 ## 🏗 Architecture
-![Application Architecture](Diagrams/Application%20Architecture.png)
-
-## 🚀 Recent Updates
-
-This project has been modernized with the following enhancements:
-
-- **Modern UI Components**: Migrated to shadcn/ui for consistent, accessible design
-- **Dark/Light Mode**: Added theme switching with smooth transitions
-- **Enhanced Responsiveness**: Mobile-first design with improved cross-device experience
-- **Component Architecture**: Modular, reusable components with better maintainability
-- **Real-time Features**: Server-Sent Events integration for instant notifications
-- **Improved Accessibility**: WCAG compliant design with proper ARIA labels
-
----
-
-**Built with ❤️ using modern web technologies for the future of digital payments**
+![image](https://github.com/Yash-Gupta-01/-Fluxpay/blob/main/Diagrams/Application%20Architecture.png)

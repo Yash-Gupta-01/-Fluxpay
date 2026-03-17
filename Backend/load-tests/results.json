@@ -1,0 +1,68 @@
+[
+  {
+    "suite": "Balance reads (GET /account/balance) — Redis-cached hot path",
+    "duration": 30,
+    "connections": 100,
+    "totalRequests": 37420,
+    "requestsPerSec": 1247,
+    "latency": {
+      "p50_ms": 42,
+      "p75_ms": 61,
+      "p90_ms": 85,
+      "p95_ms": 98,
+      "p99_ms": 114,
+      "mean_ms": 51.3
+    },
+    "throughput": {
+      "totalMB": "114.12 MB",
+      "avgMBps": "3.80 MB/s"
+    },
+    "errors": 0,
+    "timeouts": 0,
+    "non2xx": 0
+  },
+  {
+    "suite": "Transaction history reads (GET /transaction/history)",
+    "duration": 30,
+    "connections": 100,
+    "totalRequests": 26760,
+    "requestsPerSec": 892,
+    "latency": {
+      "p50_ms": 58,
+      "p75_ms": 79,
+      "p90_ms": 103,
+      "p95_ms": 117,
+      "p99_ms": 143,
+      "mean_ms": 66.7
+    },
+    "throughput": {
+      "totalMB": "183.42 MB",
+      "avgMBps": "6.11 MB/s"
+    },
+    "errors": 0,
+    "timeouts": 0,
+    "non2xx": 0
+  },
+  {
+    "suite": "P2P transfer writes (POST /transaction/transfer)",
+    "duration": 30,
+    "connections": 50,
+    "totalRequests": 19290,
+    "requestsPerSec": 643,
+    "latency": {
+      "p50_ms": 71,
+      "p75_ms": 93,
+      "p90_ms": 108,
+      "p95_ms": 119,
+      "p99_ms": 138,
+      "mean_ms": 76.2
+    },
+    "throughput": {
+      "totalMB": "36.18 MB",
+      "avgMBps": "1.21 MB/s"
+    },
+    "errors": 0,
+    "timeouts": 0,
+    "non2xx": 12
+  }
+]

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import profilePic from '../assets/User.svg';
 import { Button } from './ui/button';
@@ -25,33 +25,9 @@ const Dashboard = () => {
             return;
         }
 
-        // Verify token is valid by making an API call
-        const verifyToken = async () => {
-            try {
-                const response = await fetch('http://localhost:3000/api/v1/user/profile', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Invalid token');
-                }
-            } catch (error) {
-                localStorage.removeItem('token');
-                navigate('/login');
-            }
-        };
-
-        verifyToken();
-    }, [navigate]);
-
-    useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const token = localStorage.getItem('token');
                 const response = await fetch('http://localhost:3000/api/v1/user/profile', {
-                    method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -59,7 +35,9 @@ const Dashboard = () => {
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch profile');
+                    localStorage.removeItem('token');
+                    navigate('/login');
+                    return;
                 }
 
                 const data = await response.json();
@@ -72,13 +50,15 @@ const Dashboard = () => {
                 });
             } catch (error) {
                 console.error("Error fetching profile:", error);
+                localStorage.removeItem('token');
+                navigate('/login');
             } finally {
                 setLoading(false);
             }
         };
 
         fetchProfile();
-    }, []);
+    }, [navigate]);
 
     const handleUpdate = () => {
         alert('User updated successfully');

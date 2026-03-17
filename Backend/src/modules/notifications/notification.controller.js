@@ -1,61 +1,70 @@
-const { Notification, Transaction } = require("../Database/db");
+const { Notification, Transaction } = require('../associations');
+const { publishNotificationEvent } = require('../../core/kafka/producer');
 
-// Helper function to create transaction notifications
-const createTransactionNotification = async (userId, transactionId, message) => {
+// Helper: create a single notification record
+const createTransactionNotification = async (userId, transactionId, message, vpaAddress, type) => {
     try {
-        if (!userId || !transactionId || !message) {
-            const error = new Error("Missing required parameters for notification creation");
+        if (!userId || !transactionId || !message || !vpaAddress) {
+            const error = new Error('Missing required parameters for notification creation');
             error.statusCode = 400;
             throw error;
         }
 
-        return await Notification.create({
+        const notification = await Notification.create({ userId, transactionId, message });
+
+        await publishNotificationEvent({
+            vpa: vpaAddress,
             userId,
+            notificationId: notification.id,
             transactionId,
-            message
+            message,
+            type,
+            createdAt: notification.createdAt,
         });
+
+        return notification;
     } catch (error) {
         console.error('Error creating notification:', error);
-        // Add status code if not already present
         if (!error.statusCode) {
-            error.statusCode = 500;
-            if (error.name === 'ValidationError') {
-                error.statusCode = 400;
-            }
+            error.statusCode = error.name === 'ValidationError' ? 400 : 500;
         }
         throw error;
     }
 };
 
-// Helper function to create notifications for both parties in a transaction
+// Helper: create notifications for both sender and receiver
 const createTransactionNotifications = async (senderUserId, receiverUserId, transactionId, senderVPA, receiverVPA, amount) => {
     try {
-        // Validate inputs
         if (!senderUserId || !receiverUserId || !transactionId || !senderVPA || !receiverVPA || amount === undefined) {
-            const error = new Error("Missing required parameters for transaction notifications");
+            const error = new Error('Missing required parameters for transaction notifications');
             error.statusCode = 400;
             throw error;
         }
 
-        // Create notifications in parallel but handle errors for each
+        const senderType = senderUserId === receiverUserId ? 'credit' : 'debit';
+        const receiverType = 'credit';
+
         const results = await Promise.allSettled([
             createTransactionNotification(
                 senderUserId,
                 transactionId,
-                `You sent ${amount} to ${receiverVPA}`
+                `You sent ${amount} to ${receiverVPA}`,
+                senderVPA,
+                senderType
             ),
             createTransactionNotification(
                 receiverUserId,
                 transactionId,
-                `You received ${amount} from ${senderVPA}`
+                `You received ${amount} from ${senderVPA}`,
+                receiverVPA,
+                receiverType
             )
         ]);
 
-        // Check for any failures
         const failures = results.filter(r => r.status === 'rejected');
         if (failures.length > 0) {
             console.error('Some notifications failed:', failures);
-            const error = new Error("Some notifications failed to create");
+            const error = new Error('Some notifications failed to create');
             error.statusCode = 500;
             error.failures = failures;
             throw error;
@@ -64,14 +73,12 @@ const createTransactionNotifications = async (senderUserId, receiverUserId, tran
         return results.map(r => r.value);
     } catch (error) {
         console.error('Error creating transaction notifications:', error);
-        if (!error.statusCode) {
-            error.statusCode = 500;
-        }
+        if (!error.statusCode) error.statusCode = 500;
         throw error;
     }
 };
 
-// Get notifications for a user
+// GET /notification
 const getNotifications = async (req, res) => {
     try {
         const notifications = await Notification.findAll({
@@ -89,20 +96,17 @@ const getNotifications = async (req, res) => {
         res.json({ notifications });
     } catch (error) {
         console.error('Notification fetch error:', error);
-        res.status(500).json({
-            message: "Error fetching notifications",
-            error: error.message
-        });
+        res.status(500).json({ message: 'Error fetching notifications', error: error.message });
     }
 };
 
-// Mark notification as read
+// PUT /notification/:id/read
 const markAsRead = async (req, res) => {
     const { id } = req.params;
-
     const notificationId = parseInt(id);
+
     if (isNaN(notificationId)) {
-        return res.status(400).json({ message: "Invalid notification ID" });
+        return res.status(400).json({ message: 'Invalid notification ID' });
     }
 
     try {
@@ -112,24 +116,15 @@ const markAsRead = async (req, res) => {
         );
 
         if (affectedRows === 0) {
-            return res.status(404).json({ message: "Notification not found" });
+            return res.status(404).json({ message: 'Notification not found' });
         }
 
         const notification = await Notification.findByPk(notificationId);
-
-        res.json({ message: "Notification marked as read", notification });
+        res.json({ message: 'Notification marked as read', notification });
     } catch (error) {
         console.error('Mark as read error:', error);
-        res.status(500).json({
-            message: "Error marking notification as read",
-            error: error.message
-        });
+        res.status(500).json({ message: 'Error marking notification as read', error: error.message });
     }
 };
 
-module.exports = {
-    getNotifications,
-    markAsRead,
-    createTransactionNotification,
-    createTransactionNotifications,
-};
+module.exports = { getNotifications, markAsRead, createTransactionNotification, createTransactionNotifications };

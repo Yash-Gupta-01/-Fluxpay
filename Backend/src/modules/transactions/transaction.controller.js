@@ -1,40 +1,41 @@
-const { Transaction, User, Account, sequelize } = require("../Database/db");
+const { Transaction, User, Account, sequelize } = require('../associations');
 const { Op } = require('sequelize');
-const { createTransactionNotifications } = require("./notificationController");
-const { emitNotification } = require("../sse");
+const { createTransactionNotifications } = require('../notifications/notification.controller');
+const { cacheDel, keys } = require('../../core/cache/redis');
+const { publishTransactionEvent } = require('../../core/kafka/producer');
 const crypto = require('crypto');
-// Helper function to validate and get accounts for a transaction
+
+// Helper: validate accounts and ensure sufficient balance
 const validateTransactionAccounts = async (senderUserId, receiverVPA, amount) => {
     try {
         const senderAccount = await Account.findOne({ where: { userId: senderUserId } });
         if (!senderAccount) {
-            const error = new Error("Sender account not found");
+            const error = new Error('Sender account not found');
             error.statusCode = 404;
             throw error;
         }
 
         const receiverAccount = await Account.findOne({ where: { vpaAddress: receiverVPA } });
         if (!receiverAccount) {
-            const error = new Error("Receiver VPA not found");
+            const error = new Error('Receiver VPA not found');
             error.statusCode = 404;
             throw error;
         }
 
         if (senderAccount.userId === receiverAccount.userId) {
-            const error = new Error("Cannot transfer to yourself");
+            const error = new Error('Cannot transfer to yourself');
             error.statusCode = 400;
             throw error;
         }
 
         if (senderAccount.balance < amount) {
-            const error = new Error("Insufficient balance");
+            const error = new Error('Insufficient balance');
             error.statusCode = 400;
             throw error;
         }
 
         return { senderAccount, receiverAccount };
     } catch (error) {
-        // Add status code if not already present
         if (!error.statusCode) {
             error.statusCode = 500;
         }
@@ -42,7 +43,7 @@ const validateTransactionAccounts = async (senderUserId, receiverVPA, amount) =>
     }
 };
 
-// Helper function to process transaction
+// Helper: atomically create and process a transaction record
 const processTransaction = async (senderUserId, receiverUserId, amount, description) => {
     let transaction;
     try {
@@ -55,20 +56,16 @@ const processTransaction = async (senderUserId, receiverUserId, amount, descript
             description,
             status: 'pending'
         });
-        if (description === "Welcome bonus") {
+
+        if (description === 'Welcome bonus') {
             await sequelize.transaction(async (t) => {
                 await Account.update(
                     { balance: sequelize.literal(`balance + ${amount}`) },
                     { where: { userId: receiverUserId }, transaction: t }
                 );
-                await transaction.update(
-                    { status: 'completed' },
-                    { transaction: t }
-                );
+                await transaction.update({ status: 'completed' }, { transaction: t });
             });
-        }
-        else {
-            // Using transaction to ensure atomic updates
+        } else {
             await sequelize.transaction(async (t) => {
                 await Account.update(
                     { balance: sequelize.literal(`balance - ${amount}`) },
@@ -78,27 +75,44 @@ const processTransaction = async (senderUserId, receiverUserId, amount, descript
                     { balance: sequelize.literal(`balance + ${amount}`) },
                     { where: { userId: receiverUserId }, transaction: t }
                 );
-                await transaction.update(
-                    { status: 'completed' },
-                    { transaction: t }
-                );
+                await transaction.update({ status: 'completed' }, { transaction: t });
             });
         }
 
+        // Invalidate cached balances for both parties
+        await Promise.all([
+            cacheDel(keys.balance(senderUserId)),
+            cacheDel(keys.balance(receiverUserId)),
+        ]);
+
+        // Publish domain event to Kafka for async processing
+        await publishTransactionEvent({
+            transactionId: transaction.transactionId,
+            senderId: senderUserId,
+            receiverId: receiverUserId,
+            amount,
+            status: 'completed',
+        });
+
         return transaction;
     } catch (error) {
-        // Mark transaction as failed if it was created
         if (transaction) {
             await transaction.update({ status: 'failed' }).catch(console.error);
+            await publishTransactionEvent({
+                transactionId: transaction.transactionId,
+                senderId: senderUserId,
+                receiverId: receiverUserId,
+                amount,
+                status: 'failed',
+            }).catch(() => {});
         }
-
-        const txError = new Error("Transaction failed: " + error.message);
+        const txError = new Error('Transaction failed: ' + error.message);
         txError.statusCode = 500;
         throw txError;
     }
 };
 
-// Fetch transaction history for a user
+// GET /transaction/history
 const getTransactionHistory = async (req, res) => {
     try {
         const transactions = await Transaction.findAll({
@@ -109,16 +123,8 @@ const getTransactionHistory = async (req, res) => {
                 ]
             },
             include: [
-                {
-                    model: User,
-                    as: 'sender',
-                    attributes: ['firstName', 'lastName']
-                },
-                {
-                    model: User,
-                    as: 'receiver',
-                    attributes: ['firstName', 'lastName']
-                }
+                { model: User, as: 'sender', attributes: ['firstName', 'lastName'] },
+                { model: User, as: 'receiver', attributes: ['firstName', 'lastName'] }
             ],
             order: [['createdAt', 'DESC']]
         });
@@ -137,43 +143,31 @@ const getTransactionHistory = async (req, res) => {
         res.json({ transactions: formattedTransactions });
     } catch (error) {
         console.error('Transaction fetch error:', error);
-        res.status(500).json({
-            message: "Error fetching transaction history",
-            error: error.message
-        });
+        res.status(500).json({ message: 'Error fetching transaction history', error: error.message });
     }
 };
 
-// Create a new transaction (transfer between users)
+// POST /transaction/transfer
 const createTransaction = async (req, res) => {
     const { receiverVPA, amount, description } = req.body;
 
     try {
-        // Input validation
         if (!receiverVPA) {
-            return res.status(400).json({ message: "Receiver VPA is required" });
+            return res.status(400).json({ message: 'Receiver VPA is required' });
         }
         if (!amount || typeof amount !== 'number') {
-            return res.status(400).json({ message: "Valid amount is required" });
+            return res.status(400).json({ message: 'Valid amount is required' });
         }
         if (amount <= 0) {
-            return res.status(400).json({ message: "Amount must be greater than 0" });
+            return res.status(400).json({ message: 'Amount must be greater than 0' });
         }
 
-        // Validate accounts and get account details
         const { senderAccount, receiverAccount } = await validateTransactionAccounts(req.userId, receiverVPA, amount);
 
-        // Process the transaction
-        const transaction = await processTransaction(
-            req.userId,
-            receiverAccount.userId,
-            amount,
-            description
-        );
+        const transaction = await processTransaction(req.userId, receiverAccount.userId, amount, description);
 
         let notificationError;
         try {
-            // Create notifications for both parties
             await createTransactionNotifications(
                 req.userId,
                 receiverAccount.userId,
@@ -182,28 +176,22 @@ const createTransaction = async (req, res) => {
                 receiverVPA,
                 amount
             );
-
-            // Emit real-time notifications
-            emitNotification(req.userId, { message: `You sent ${amount} to ${receiverVPA}`, type: 'debit' });
-            emitNotification(receiverAccount.userId, { message: `You received ${amount} from ${senderAccount.vpaAddress}`, type: 'credit' });
         } catch (err) {
             notificationError = err;
-            // Log notification error but don't fail the transaction
             console.error('Failed to create notifications:', notificationError);
-            // Transaction was successful, but notifications failed
         }
 
         res.status(200).json({
-            message: "Transaction successful",
+            message: 'Transaction successful',
             transaction,
-            warnings: notificationError ? ["Transaction successful but notifications may be delayed"] : undefined
+            warnings: notificationError ? ['Transaction successful but notifications may be delayed'] : undefined
         });
     } catch (error) {
         console.log(error);
         const statusCode = error.statusCode || 500;
-        const message = statusCode === 500 ?
-            "An unexpected error occurred while processing the transaction" :
-            error.message;
+        const message = statusCode === 500
+            ? 'An unexpected error occurred while processing the transaction'
+            : error.message;
 
         res.status(statusCode).json({
             message,
@@ -212,8 +200,4 @@ const createTransaction = async (req, res) => {
     }
 };
 
-module.exports = {
-    getTransactionHistory,
-    createTransaction,
-    processTransaction,
-};
+module.exports = { getTransactionHistory, createTransaction, processTransaction };

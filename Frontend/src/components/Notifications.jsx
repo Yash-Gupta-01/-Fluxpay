@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { ArrowLeft, Bell, BellRing } from 'lucide-react';
 
@@ -50,6 +50,43 @@ const Notifications = () => {
 
     useEffect(() => {
         fetchNotifications();
+    }, []);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const streamUrl = `http://localhost:3000/api/v1/notifications/stream?token=${encodeURIComponent(token)}`;
+        const eventSource = new EventSource(streamUrl);
+
+        const handleNotification = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                setNotifications((prev) => [
+                    {
+                        id: data.id || `live-${Date.now()}`,
+                        message: data.message || 'New notification',
+                        read: false,
+                        createdAt: data.createdAt || new Date().toISOString(),
+                    },
+                    ...prev,
+                ]);
+            } catch (err) {
+                console.error('Failed to parse notification event:', err);
+            }
+        };
+
+        eventSource.addEventListener('notification', handleNotification);
+
+        eventSource.onerror = () => {
+            // Let the browser retry automatically; we only log for visibility
+            console.warn('Notification stream disconnected, retrying...');
+        };
+
+        return () => {
+            eventSource.removeEventListener('notification', handleNotification);
+            eventSource.close();
+        };
     }, []);
 
     if (loading) {

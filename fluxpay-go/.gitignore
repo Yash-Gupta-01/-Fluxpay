@@ -1,0 +1,14 @@
+bin/
+tmp/
+*.log
+coverage.out
+coverage.html
+.env
+.env.local
+.DS_Store
+*.swp
+*.swo
+*.iml
+.idea/
+.vscode/
+testdata/

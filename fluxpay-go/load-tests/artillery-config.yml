@@ -1,0 +1,87 @@
+config:
+  target: "http://localhost:8080"
+  phases:
+    - duration: 30
+      arrivalRate: 10
+      name: warmup
+    - duration: 60
+      arrivalRate: 10
+      rampTo: 100
+      name: ramp
+    - duration: 120
+      arrivalRate: 100
+      name: sustain
+  processor: "load-tests/processor.js"
+  plugins:
+    ensure: {}
+  ensure:
+    thresholds:
+      - "http.response_time.p95": 120
+      - "vusers.failed": 0.1
+
+scenarios:
+  - name: register-login-transfer-history
+    beforeScenario: "prepareUsers"
+    flow:
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "{{ receiverEmail }}"
+            password: "{{ receiverPassword }}"
+            name: "{{ receiverName }}"
+          expect:
+            - statusCode: 201
+          capture:
+            - json: "$.data.user_id"
+              as: "receiverUserID"
+
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "{{ senderEmail }}"
+            password: "{{ senderPassword }}"
+            name: "{{ senderName }}"
+          expect:
+            - statusCode: 201
+
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ senderEmail }}"
+            password: "{{ senderPassword }}"
+          expect:
+            - statusCode: 200
+          capture:
+            - json: "$.data.access_token"
+              as: "senderAccessToken"
+
+      - post:
+          url: "/api/wallet/topup"
+          headers:
+            Authorization: "Bearer {{ senderAccessToken }}"
+          json:
+            amount: "1000.00"
+            currency: "USD"
+            note: "load-test topup"
+          expect:
+            - statusCode: 200
+
+      - post:
+          url: "/api/transactions/transfer"
+          headers:
+            Authorization: "Bearer {{ senderAccessToken }}"
+          json:
+            receiver_id: "{{ receiverUserID }}"
+            amount: "10.00"
+            currency: "USD"
+            note: "load-test transfer"
+            idempotency_key: "{{ idempotencyKey }}"
+          expect:
+            - statusCode: 201
+
+      - get:
+          url: "/api/transactions?limit=20&offset=0"
+          headers:
+            Authorization: "Bearer {{ senderAccessToken }}"
+          expect:
+            - statusCode: 200

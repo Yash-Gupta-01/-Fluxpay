@@ -16,6 +16,8 @@ Fluxpay is a comprehensive digital wallet platform built on a microservice-orien
 
 ## Architecture Overview
 
+For a dedicated high-level system diagram, see [HIGH_LEVEL_ARCHITECTURE.md](HIGH_LEVEL_ARCHITECTURE.md).
+
 ```
 ┌────────────────────┐       ┌──────────────┐
 │   React Frontend   │◄─SSE──│  Express API │
